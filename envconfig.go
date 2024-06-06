@@ -184,6 +184,7 @@ func CheckDisallowed(prefix string, spec interface{}) error {
 func Process(prefix string, spec interface{}) error {
 	infos, err := gatherInfo(prefix, spec)
 
+	var parseErrors []error
 	for _, info := range infos {
 
 		// `os.Getenv` cannot differentiate between an explicitly set empty value
@@ -207,24 +208,30 @@ func Process(prefix string, spec interface{}) error {
 				if info.Alt != "" {
 					key = info.Alt
 				}
-				return fmt.Errorf("required key %s missing value", key)
+				parseErrors = append(parseErrors, &ParseError{
+					KeyName:   info.Key,
+					FieldName: info.Name,
+					TypeName:  info.Field.Type().String(),
+					Value:     value,
+					Err:       fmt.Errorf("required key %s missing value", key),
+				})
 			}
 			continue
 		}
 
 		err = processField(value, info.Field)
 		if err != nil {
-			return &ParseError{
+			parseErrors = append(parseErrors, &ParseError{
 				KeyName:   info.Key,
 				FieldName: info.Name,
 				TypeName:  info.Field.Type().String(),
 				Value:     value,
 				Err:       err,
-			}
+			})
 		}
 	}
 
-	return err
+	return errors.Join(parseErrors...)
 }
 
 // MustProcess is the same as Process but panics if an error occurs

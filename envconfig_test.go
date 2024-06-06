@@ -86,6 +86,26 @@ type EmbeddedButIgnored struct {
 	SecondEmbeddedButIgnored string
 }
 
+func Test_Parse_AllRight(t *testing.T) {
+	type SchedulerConfig struct {
+		Enabled bool          `envconfig:"ENABLED"`
+		Delay   time.Duration `envconfig:"DELAY" required:"true"`
+		Timeout time.Duration `envconfig:"TIMEOUT" required:"true"`
+	}
+	type Config struct {
+		Enabled   bool            `envconfig:"ENABLED"`
+		Scheduler SchedulerConfig `envconfig:"SCHEDULER" required:"true"`
+	}
+
+	os.Clearenv()
+	err := Process("", &Config{})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		t.Fatal("unexpected error:", err)
+	}
+}
+
 func TestProcess(t *testing.T) {
 	var s Specification
 	os.Clearenv()
